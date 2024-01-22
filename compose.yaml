@@ -1,0 +1,11 @@
+# Docker compose guidelines here
+# https://github.com/docker/awesome-compose
+
+version: "3.8"
+services:
+  server:
+    build:
+      context: ./src/
+    ports:
+      - 5000:5000
+
