@@ -6,6 +6,17 @@ services:
   server:
     build:
       context: ./src/
+      shm_size: 10G
+    ipc: host
+    security_opt:
+      - seccomp=unconfined
+    #devices:
+    #- /dev/kfd
+    #- /dev/dri
+    group_add:
+    - video
+    cap_add:
+    - SYS_PTRACE
     ports:
       - 5000:5000
 

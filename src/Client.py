@@ -28,7 +28,7 @@ while not framegrabber.is_ended():
 
     # predictions = objectDetector.Detect(np.array([frame]), minScore=0.8)
     predictions = apis.DetectObjects(frame)
-    print(predictions)
+    #print(predictions)
 
     objectDetector.GetResultsOverlay(frame, predictions[0])
     cv2.imshow('Output', frame)
@@ -42,10 +42,6 @@ while not framegrabber.is_ended():
 
 # Release the capture and close all windows
 framegrabber.cap_release()
-
-
-# Call API
-# dec = myAPI.PerformGaussianBlur(image)
 
 # Show results
 # cv2.imshow("Result",np.hstack((image, dec)))

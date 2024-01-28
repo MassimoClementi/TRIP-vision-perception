@@ -4,8 +4,9 @@
 #           communicate with the processing server
 
 import numpy as np
-from EncoderDecoder import EncoderDecoder_v1
+from EncoderDecoder import EncoderDecoderNumpy, EncoderDecoderImage
 import requests
+from Utilities import print_execution_time
 
 class RESTAPIs_v1():
 
@@ -25,29 +26,11 @@ class RESTAPIs_v1():
         assert self.version in resultJson['supportedAPIs']
         return
 
-    def PerformGaussianBlur(self, image : np.array):
-        '''Test: perform a Gaussian blur on the image'''
-        # Create API request 
-        enc = EncoderDecoder_v1().Encode(image, np.uint8)
-        requestJson = {
-            'image': enc
-        }
-
-        # Call API with request and get results
-        resultJson = requests.post(
-                    self.url + "/api/v1.0/process",
-                    json = requestJson
-                ).json()
-        imageResultEncoded = resultJson['image']
-        dec = EncoderDecoder_v1().Decode(imageResultEncoded, np.uint8)
-        print(dec.shape)
-        return dec
-    
-
+    @print_execution_time
     def DetectObjects(self, image : np.array):
         '''Detect objects on the image using FasterRCNN model'''
         # Create API request
-        enc = EncoderDecoder_v1().Encode(image, np.uint8)
+        enc = EncoderDecoderImage().Encode(image, np.uint8)
         requestJson = {
             'image': enc
         }
@@ -64,8 +47,8 @@ class RESTAPIs_v1():
         prediction = []
         for p in resultJson:
             prediction.append({
-                'boxes': EncoderDecoder_v1().Decode(p['boxes'], np.float32),
-                'labels': EncoderDecoder_v1().Decode(p['labels'], np.float32),
-                'scores': EncoderDecoder_v1().Decode(p['scores'], np.float32)
+                'boxes': EncoderDecoderNumpy().Decode(p['boxes'], np.float32),
+                'labels': EncoderDecoderNumpy().Decode(p['labels'], np.float32),
+                'scores': EncoderDecoderNumpy().Decode(p['scores'], np.float32)
             })
         return prediction

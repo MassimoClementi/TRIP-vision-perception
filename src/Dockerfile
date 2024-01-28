@@ -1,21 +1,19 @@
 # syntax=docker/dockerfile:1
 
-ARG PYTHON_VERSION=3.8.8
-FROM python:${PYTHON_VERSION}-slim as base
+FROM ubuntu:latest
 
 LABEL maintainer="Massimo Clementi <massimo_clementi@icloud.com"
 LABEL repository="TRIP-vision-perception"
 LABEL version="0.1"
 LABEL description="Tracked Robotic Intelligent Platform - Vision Perception"
 
-# Prevents Python from writing pyc files.
-ENV PYTHONDONTWRITEBYTECODE=1
+# Update packages and install Python3
+RUN apt update
+RUN apt install python3 python3-pip -y
 
 # Keeps Python from buffering stdout and stderr to avoid situations where
 # the application crashes without emitting any logs due to buffering.
 ENV PYTHONUNBUFFERED=1
-
-WORKDIR /app
 
 # Create a non-privileged user that the app will run under.
 # See https://docs.docker.com/go/dockerfile-user-best-practices/
@@ -35,10 +33,12 @@ RUN adduser \
 # into this layer.
 RUN --mount=type=cache,target=/root/.cache/pip \
     --mount=type=bind,source=requirements.txt,target=requirements.txt \
-    python -m pip install -r requirements.txt
-
-# Install curl for debugging purposes
-RUN apt-get update && apt-get -y install curl
+    python3 -m pip install -r requirements.txt
+    
+# Install PyTorch with ROCm support
+RUN --mount=type=cache,target=/root/.cache/pip \
+    --mount=type=bind,source=requirements.txt,target=requirements.txt \
+    pip3 install torch torchvision --index-url https://download.pytorch.org/whl/rocm5.6
 
 # Install the frameworks needed to run opencv properly
 # https://stackoverflow.com/questions/55313610/importerror-libgl-so-1-cannot-open-shared-object-file-no-such-file-or-directo
@@ -48,11 +48,8 @@ RUN apt-get install ffmpeg libsm6 libxext6  -y
 USER appuser
 
 # Copy the source code into the container.
+WORKDIR /app
 COPY . .
-
-# Install all necessary packages
-# COPY ./requirements.txt .
-# RUN python3 -m pip install --no-cache-dir -r requirements.txt
 
 # Expose the port that the application listens on.
 EXPOSE 5000

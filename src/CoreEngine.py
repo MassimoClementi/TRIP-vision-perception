@@ -8,11 +8,7 @@ import cv2
 import torch
 import torchvision
 from COCOLabels import COCOLabels_2017
-
-
-# def PerformGaussianBlur(Image : np.array) -> np.array:
-#     imageProcessed = cv2.GaussianBlur(Image,(5,5),cv2.BORDER_DEFAULT)
-#     return imageProcessed
+from Utilities import print_execution_time
 
 
 class MyObjectDetector():
@@ -34,6 +30,7 @@ class MyObjectDetector():
             print('Memory cached:   ', round(torch.cuda.memory_reserved(0)/1024**3,1), 'GB')
         return device
         
+    @print_execution_time
     def CreateDNNModel(self):
         '''Create the deep learning model architecture'''
         print('Creating DNN model...')
@@ -51,12 +48,14 @@ class MyObjectDetector():
         torch.save(self.model.state_dict(), path)
         return
     
+    @print_execution_time
     def LoadModelStateDict(self, path : str):
         '''Load weights and status of neural network from disk'''
         print('Loading DNN state dict to ', path)
         self.model.load_state_dict(torch.load(path))
         return
 
+    @print_execution_time
     def Detect(self, images : np.array, minScore : float) -> list:
         '''Detect objects in the image'''
         if(not self.isModelCreated): self.CreateDNNModel()

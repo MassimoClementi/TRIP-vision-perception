@@ -32,7 +32,7 @@ pip3 install -r requirements.txt
 ```
 
 
-# Run processing server
+## Run processing server
 
 Make sure that Docker Engine is installed and running.
 
@@ -42,7 +42,7 @@ docker compose up --build
 ```
 
 
-# Run client
+## Run client
 
 If not already activated, activate the conda environment
 ```
@@ -52,4 +52,11 @@ conda activate trip-vision-perception
 Then run client using Python3
 ```
 python3 Client.py
+```
+
+## Cleanup
+
+Clean docker cache using the following command:
+```
+docker system prune -a
 ```
