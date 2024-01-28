@@ -36,7 +36,7 @@ class MyObjectDetector():
         print('Creating DNN model...')
         # model = detection.fasterrcnn_mobilenet_v3_large_320_fpn(pretrained=True, pretrained_backbone = True)
         self.model = torchvision.models.detection.fasterrcnn_mobilenet_v3_large_fpn(
-            pretrained=False, pretrained_backbone=False
+            weights=None, weights_backbone=None
         ).to(self.device)
         self.LoadModelStateDict('./config/fasterrcnn_mobilenet_v3_large_fpn-state-dict.pth')
         self.isModelCreated = True
@@ -77,6 +77,7 @@ class MyObjectDetector():
 
         return predictions
     
+    @print_execution_time
     def GetResultsOverlay(self, image : np.array, predictions : dict) -> np.array:
         '''Display object detection results as overlay'''
         for i in range(len(predictions['boxes'])):

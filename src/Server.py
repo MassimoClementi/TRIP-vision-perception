@@ -47,6 +47,9 @@ def EndpointDetectObjects():
 
 if __name__ == '__main__':
  
+    # Initialize ObjectDetector beforehand
+    objectDetector.CreateDNNModel()
+
     # run() method of Flask class runs the application 
     # on the local development server.
     app.run(host='0.0.0.0')

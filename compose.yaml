@@ -6,7 +6,7 @@ services:
   server:
     build:
       context: ./src/
-      shm_size: 10G
+      shm_size: 2G
     ipc: host
     security_opt:
       - seccomp=unconfined

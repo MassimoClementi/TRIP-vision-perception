@@ -20,14 +20,14 @@ class EncoderDecoderImage():
 
     @print_execution_time
     def Encode(self, data : np.array, dtype : type) -> str:
-        print('Encoding data...')
+        print('Encoding image...')
         _, buffer = cv2.imencode(self.imgtype, np.array(data, dtype=dtype))
         encoded_as_text = base64.b64encode(buffer)
         return encoded_as_text.decode('utf-8')
     
     @print_execution_time
     def Decode(self, dataEncoded : str, dtype : type) -> np.array:
-        print('Decoding data...')
+        print('Decoding image...')
         bytesArray = dataEncoded.encode('utf-8')
         encoded_text = base64.b64decode(bytesArray)
         encoded_as_np = np.frombuffer(encoded_text, dtype=dtype)
@@ -48,14 +48,14 @@ class EncoderDecoderNumpy():
 
     @print_execution_time
     def Encode(self, data : np.array, dtype : type) -> str:
-        print('Encoding data...')
+        print('Encoding array...')
         json_dump = json.dumps({'data': data}, 
             cls=NumpyEncoder)
         return json_dump
     
     @print_execution_time
     def Decode(self, dataEncoded : str, dtype : type) -> np.array:
-        print('Decoding data...')
+        print('Decoding array...')
         json_load = json.loads(dataEncoded)
         a_restored = np.asarray(json_load["data"])
         return a_restored    
