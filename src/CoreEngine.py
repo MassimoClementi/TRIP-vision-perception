@@ -64,15 +64,16 @@ class MyObjectDetector():
         self.model.eval()
         x = torch.tensor(
             np.transpose(np.array(images/255, dtype=float), (0, 3, 1, 2))).to(self.device)
-        predictions = self.model.double()(x.double())
+        with torch.no_grad():
+            predictions = self.model.double()(x.double())
 
         print('Selecting matches by score...')
         for p in predictions:
             scores = p['scores']
             mask = scores > minScore
-            p['boxes'] = p['boxes'][mask].detach().numpy()
-            p['labels'] = p['labels'][mask].detach().numpy()
-            p['scores'] = p['scores'][mask].detach().numpy()
+            p['boxes'] = p['boxes'][mask].detach().cpu().numpy()
+            p['labels'] = p['labels'][mask].detach().cpu().numpy()
+            p['scores'] = p['scores'][mask].detach().cpu().numpy()
         print(predictions)
 
         return predictions
