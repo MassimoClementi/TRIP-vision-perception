@@ -21,32 +21,32 @@ class MultiObjectTracker():
 
         # Initialize data arrays
         self._bboxes = np.zeros((self._maxNumTrackedObjects, 4))
-        self._labels = np.zeros(self._maxNumTrackedObjects)
+        self._labels = np.zeros(self._maxNumTrackedObjects, dtype=int)
         self._features = np.zeros(
             (self._maxNumTrackedObjects, self._featureSpaceSize)
         )
         self._movementVecs = np.zeros((self._maxNumTrackedObjects, 2))
-        self._trackingIDs = np.zeros(self._maxNumTrackedObjects)
-        self._lives =  np.zeros(self._maxNumTrackedObjects)
+        self._trackingIDs = np.zeros(self._maxNumTrackedObjects, dtype=int)
+        self._lives =  np.zeros(self._maxNumTrackedObjects, dtype=int)
 
     @print_execution_time
     def Update(self, image : np.ndarray, dBoxes : np.ndarray, 
                dLabels : np.ndarray) -> None:
 
         # Debug: insert arbitrary tracked objects 
-        res = self.InsertNewTrackedObject(
-            np.array([[10,10,20,20]]), 64, np.ones(self._featureSpaceSize)
-        )
-        print(res)
-        res = self.InsertNewTrackedObject(
-            np.array([[100,200,300,400]]), 64, np.ones(self._featureSpaceSize)
-        )
-        print(res)
+        # res = self.InsertNewTrackedObject(
+        #     np.array([[10,10,20,20]]), 64, np.ones(self._featureSpaceSize)
+        # )
+        # print(res)
+        # res = self.InsertNewTrackedObject(
+        #     np.array([[100,200,300,400]]), 64, np.ones(self._featureSpaceSize)
+        # )
+        # print(res)
         # ------
 
         self.PrintStatus()
 
-        currUpdated =  np.zeros(self._maxNumTrackedObjects)
+        currtUpdated =  np.zeros(self._maxNumTrackedObjects, dtype=bool)
 
         # For each unique class of detected matches
         for l in np.unique(dLabels):
@@ -54,6 +54,7 @@ class MultiObjectTracker():
 
             # Between detected objects, select those which are of given class
             dCurrLabelMask = dLabels == l
+            dCurrLabelIndexes = GetIndexesFromMask(dCurrLabelMask)
             dBoxesCurrLabel = dBoxes[dCurrLabelMask]
 
             # Between tracked object, select those which are of given class
@@ -122,11 +123,45 @@ class MultiObjectTracker():
             #   but do not change life integer
             # TODO
 
+            #dIndexArr = np.array([dCurrLabelIndexes]).T
+            #dMatchesClassificationAppended = np.hstack(
+            #    (dIndexArr, dMatchesClassification)
+            #)
+            #print(dMatchesClassificationAppended)
+            #print(dMatchesClassificationAppended.shape)
+
+            for dIdx in range(dMatchesClassification.shape[0]):
+                currClassRes = dMatchesClassification[dIdx][0]
+                currCorrespondIndex = dMatchesClassification[dIdx][1]
+                
+                if currClassRes == MatchClassification.CORRESPONDENT:
+                    currtIndex = tCurrLabelIndexes[currCorrespondIndex]
+                    print("Updating tracked object at index", currtIndex, "...")
+                    currtUpdated[currtIndex] = True
+                    self._bboxes[currtIndex] = dBoxesCurrLabel[dIdx]
+                    self._lives[currtIndex] =+ self.UpdateLifeIndex(
+                        self._lives[currtIndex], True
+                    )
+                if currClassRes == MatchClassification.OCCLUSION:
+                    print("Tracked object at index", currtIndex, "in occlusion")
+                    currtIndex = tCurrLabelIndexes[currCorrespondIndex]
+                    currtUpdated[currtIndex] = True
+                    pass
+                if currClassRes == MatchClassification.NEW_MATCH:
+                    print("Inserting new tracked object...")
+                    currtIndex = self.InsertNewTrackedObject(
+                        dBoxesCurrLabel[dIdx], l, dFeaturesCurrLabel[dIdx]
+                    )
+                    currtUpdated[currtIndex] = True
 
         # Finally, for all others, propagate by movement vector and also decrease 
         # life integer by one, down to life min
-        # TODO   
+        currtNotUpdated = currtUpdated == False
+        self._lives[currtNotUpdated] = self.UpdateLifeIndex(
+            self._lives[currtNotUpdated], False
+        )
 
+        self.PrintStatus()
 
 
     def ExtractFeatures(self, image : np.ndarray, bboxes : np.ndarray) -> np.ndarray:
@@ -153,7 +188,7 @@ class MultiObjectTracker():
         
 
     def InsertNewTrackedObject(self, box : np.ndarray, label : int, 
-                                features : np.ndarray) -> bool:
+                                features : np.ndarray) -> int:
         # Check if space is present for inserting a tracking object
         maskAvailable = self._lives == 0
         currIndex = GetNthOccurenceIndex(maskAvailable, 0)
@@ -166,10 +201,7 @@ class MultiObjectTracker():
             self._movementVecs[currIndex] = np.zeros(2)
             self._trackingIDs[currIndex] = self.GetNextUniqueTrackID()
             self._lives[currIndex] = self._minLife + 1
-            return True
-        else:
-            # No space is left for tracking object
-            return False
+        return currIndex
 
     def GetNextUniqueTrackID(self) -> int:
         # Tracking ID is unique because always incremental
@@ -196,6 +228,13 @@ class MultiObjectTracker():
         else:
             return np.array([MatchClassification.NEW_MATCH, -1])
 
+    def UpdateLifeIndex(self, lifeIndex : int, isIncrement : bool) -> int:
+        if isIncrement:
+            lifeIndexRes = lifeIndex + 1
+        else:
+            lifeIndexRes = lifeIndex - 1
+        return np.clip(lifeIndexRes, self._minLife, self._maxLife)
+
     def PrintStatus(self) -> None:
         print('== TRACKED OBJECTS ==')
         print('Boxes:')
@@ -215,3 +254,22 @@ class MultiObjectTracker():
     def UpdatePositionPrediction(self):
         pass
 
+
+
+    def GetTrackedObjects(self, minLife = 3) -> dict:
+        
+        selectionMask = self._lives >= minLife
+
+        bboxes = self._bboxes[selectionMask]
+        labels = self._labels[selectionMask]
+        ids = self._trackingIDs[selectionMask]
+
+        trackedPredictions = {
+            'boxes': bboxes,
+            'labels': labels,
+            'ids': ids
+        }
+
+        print(trackedPredictions)
+
+        return trackedPredictions
