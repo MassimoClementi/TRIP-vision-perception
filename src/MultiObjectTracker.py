@@ -33,19 +33,6 @@ class MultiObjectTracker():
     def Update(self, image : np.ndarray, dBoxes : np.ndarray, 
                dLabels : np.ndarray) -> None:
 
-        # Debug: insert arbitrary tracked objects 
-        # res = self.InsertNewTrackedObject(
-        #     np.array([[10,10,20,20]]), 64, np.ones(self._featureSpaceSize)
-        # )
-        # print(res)
-        # res = self.InsertNewTrackedObject(
-        #     np.array([[100,200,300,400]]), 64, np.ones(self._featureSpaceSize)
-        # )
-        # print(res)
-        # ------
-
-        self.PrintStatus()
-
         currtUpdated =  np.zeros(self._maxNumTrackedObjects, dtype=bool)
 
         # For each unique class of detected matches
@@ -58,7 +45,7 @@ class MultiObjectTracker():
             dBoxesCurrLabel = dBoxes[dCurrLabelMask]
 
             # Between tracked object, select those which are of given class
-            tCurrLabelMask = self._labels == l
+            tCurrLabelMask = np.logical_and(self._labels == l, self._lives > 0)
             tCurrLabelIndexes = GetIndexesFromMask(tCurrLabelMask)
             tBoxesCurrLabel = self._bboxes[tCurrLabelMask]
 
@@ -72,7 +59,6 @@ class MultiObjectTracker():
             tMovementVecsCurrLabel = self._movementVecs[tCurrLabelMask]
             tPredictedBoxesCurrLabel = self.GetPredictedPosition(
                 tBoxesCurrLabel, tMovementVecsCurrLabel)
-            #print(currPredictedTrackedBoxes)
 
             # Extract matrix of distances between each detected match of given 
             # class and each prediction of tracked match of given class
@@ -84,20 +70,15 @@ class MultiObjectTracker():
                 dCentersCurrLabel = np.apply_along_axis(
                     BoundingBox.GetCenter, 1, dBoxesCurrLabel
                 )
-                #print(dCentersCurrLabel)
                 tPredictedCentersCurrLabel = np.apply_along_axis(
                     BoundingBox.GetCenter, 1, tPredictedBoxesCurrLabel
                 )
-                #print(tPredictedCentersCurrLabel)
                 matrixCentersDistances = self.ComputeDistancesMatrix(
                     dCentersCurrLabel, tPredictedCentersCurrLabel
                 )
                 matrixFeaturesDistances = self.ComputeDistancesMatrix(
                     dFeaturesCurrLabel, tFeaturesCurrLabel
                 )
-            #distancesMatrixTEST = self.ComputeDistancesMatrix(currBoxes, currBoxes)
-            #print(matrixCentersDistances)
-            #print(matrixFeaturesDistances)
 
             # Based of center distances and features distances, classify each
             # match as either:
@@ -107,7 +88,6 @@ class MultiObjectTracker():
             weightFactor = 1.0
             matrixWeightedDistances = weightFactor * matrixCentersDistances + \
                 (1.0 - weightFactor) * matrixFeaturesDistances
-            #print(avgDistancesMatrix)
             dMatchesClassification = np.apply_along_axis(
                     self.GetDetectedMatchClassification, 1, matrixWeightedDistances
             )
@@ -121,15 +101,6 @@ class MultiObjectTracker():
             #   vector as zeros and add life integer by one, up to max
             # - for those which are in occlusion, propagate box by movement vector 
             #   but do not change life integer
-            # TODO
-
-            #dIndexArr = np.array([dCurrLabelIndexes]).T
-            #dMatchesClassificationAppended = np.hstack(
-            #    (dIndexArr, dMatchesClassification)
-            #)
-            #print(dMatchesClassificationAppended)
-            #print(dMatchesClassificationAppended.shape)
-
             for dIdx in range(dMatchesClassification.shape[0]):
                 currClassRes = dMatchesClassification[dIdx][0]
                 currCorrespondIndex = dMatchesClassification[dIdx][1]
@@ -138,13 +109,16 @@ class MultiObjectTracker():
                     currtIndex = tCurrLabelIndexes[currCorrespondIndex]
                     print("Updating tracked object at index", currtIndex, "...")
                     currtUpdated[currtIndex] = True
+                    self._movementVecs[currtIndex] = BoundingBox.GetDelta(
+                        dBoxesCurrLabel[dIdx], self._bboxes[currtIndex]
+                    )
                     self._bboxes[currtIndex] = dBoxesCurrLabel[dIdx]
                     self._lives[currtIndex] =+ self.UpdateLifeIndex(
                         self._lives[currtIndex], True
                     )
                 if currClassRes == MatchClassification.OCCLUSION:
-                    print("Tracked object at index", currtIndex, "in occlusion")
                     currtIndex = tCurrLabelIndexes[currCorrespondIndex]
+                    print("Tracked object at index", currtIndex, "in occlusion")
                     currtUpdated[currtIndex] = True
                     pass
                 if currClassRes == MatchClassification.NEW_MATCH:
@@ -154,12 +128,18 @@ class MultiObjectTracker():
                     )
                     currtUpdated[currtIndex] = True
 
-        # Finally, for all others, propagate by movement vector and also decrease 
-        # life integer by one, down to life min
+        # For all others which have not been updated, propagate by
+        # movement vector and also decrease life integer by one, down to min
         currtNotUpdated = currtUpdated == False
+        self._bboxes[currtNotUpdated] = self.GetPredictedPosition(
+            self._bboxes[currtNotUpdated], self._movementVecs[currtNotUpdated]
+        )
         self._lives[currtNotUpdated] = self.UpdateLifeIndex(
             self._lives[currtNotUpdated], False
         )
+
+        # Cleanup those which have min life
+        self._trackingIDs[self._lives == self._minLife] = 0 
 
         self.PrintStatus()
 
@@ -173,13 +153,13 @@ class MultiObjectTracker():
   
     def GetPredictedPosition(self, boxes : np.ndarray, 
                              movementVec : np.ndarray) -> np.ndarray:
-        # Dummy predicted position
-        # TODO
-        #print(boxes)
-        #print(boxes.shape)
-        #print(movementVec)
-        #print(movementVec.shape)
-        return boxes
+        if(len(boxes)==0): return boxes
+        boxes_movementVecs = np.hstack((boxes, movementVec))
+        traslatedBoxes = np.apply_along_axis(
+            lambda x: BoundingBox.Traslate(x[:4], x[4:6]), \
+                1, boxes_movementVecs
+        )
+        return traslatedBoxes
 
     def ComputeDistancesMatrix(self, centersA : np.ndarray, centersB : np.ndarray):
         #  Compute euclideal distance matrix between 2D points
@@ -251,11 +231,6 @@ class MultiObjectTracker():
         print(self._lives)
         print('===================')
 
-    def UpdatePositionPrediction(self):
-        pass
-
-
-
     def GetTrackedObjects(self, minLife = 3) -> dict:
         
         selectionMask = self._lives >= minLife
@@ -269,7 +244,5 @@ class MultiObjectTracker():
             'labels': labels,
             'ids': ids
         }
-
-        print(trackedPredictions)
 
         return trackedPredictions

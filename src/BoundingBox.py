@@ -9,11 +9,16 @@ def GetCenter(box : np.ndarray) -> np.ndarray:
     return res
 
 def Traslate(box : np.ndarray, shift : np.ndarray) -> np.ndarray:
-    res = np.array((
+    res = np.array([
         (box[0] + shift[0]),
         (box[1] + shift[1]),
         (box[2] + shift[0]),
         (box[3] + shift[1])
-        ))
+        ])
     return res
 
+def GetDelta(bboxB, bboxA):
+    centerB = GetCenter(bboxB)
+    centerA = GetCenter(bboxA)
+    centerDelta = centerB - centerA
+    return centerDelta
