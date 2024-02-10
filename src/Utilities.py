@@ -18,10 +18,16 @@ def print_execution_time(func):
     return print_execution_time_wrapper
 
 # Get index of the n-th occurence of True in the provided mask 
-def GetNthOccurenceIndex(mask : np.array, nth : int) -> int:
+def GetNthOccurenceIndex(mask : np.ndarray, nth : int) -> int:
     first_occurence = np.where(mask)
     if(len(first_occurence[0]) >= nth):
         return first_occurence[0][nth]
     else:
         return -1
+
+# Get all indexes of True instances in the provided mask 
+def GetIndexesFromMask(mask : np.ndarray) -> np.ndarray:
+    sequence = np.arange(len(mask))
+    return sequence[mask]
+
 
