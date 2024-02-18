@@ -12,12 +12,16 @@ import BoundingBox
 
 class MultiObjectTracker():
 
-    def __init__(self, maxNumTrackedObjects : int) -> None:
+    def __init__(self, maxNumTrackedObjects : int,
+                 correspondenceMaxDistance : int,
+                 occlusionMinDistance : int) -> None:
         # Initialize parameters
         self._maxNumTrackedObjects = maxNumTrackedObjects
         self._featureSpaceSize = 10
         self._minLife = 0
         self._maxLife = 5
+        self._correspondenceMaxDistance = correspondenceMaxDistance
+        self._occlusionMinDistance = occlusionMinDistance
 
         # Initialize data arrays
         self._bboxes = np.zeros((self._maxNumTrackedObjects, 4))
@@ -141,7 +145,7 @@ class MultiObjectTracker():
         # Cleanup those which have min life
         self._trackingIDs[self._lives == self._minLife] = 0 
 
-        self.PrintStatus()
+        #self.PrintStatus()
 
 
     def ExtractFeatures(self, image : np.ndarray, bboxes : np.ndarray) -> np.ndarray:
@@ -200,8 +204,8 @@ class MultiObjectTracker():
             secondMinValue = abs(minValue - slice[sortedArray[1]])
         
         # Estimate match status based on extracted metrics
-        if(minValue < 100):
-            if(secondMinValue > 50):
+        if(minValue < self._correspondenceMaxDistance):
+            if(secondMinValue > self._occlusionMinDistance):
                 return np.array([MatchClassification.CORRESPONDENT, minIndex])
             else:
                 return np.array([MatchClassification.OCCLUSION, minIndex])

@@ -82,7 +82,6 @@ class MyObjectDetector():
     def GetResultsOverlay(self, image : np.array, predictions : dict, useTrackingIDs = False) -> np.array:
         '''Display object detection results as overlay'''
         for i in range(len(predictions['boxes'])):
-            #score = predictions['scores'][i]
             label = predictions['labels'][i]
             c1, r1, c2, r2 = map(int, predictions['boxes'][i].tolist())
             display_color = (0, 255, 0)
