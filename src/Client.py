@@ -7,7 +7,7 @@ import numpy as np
 from Framegrabber import Framegrabber
 import APIs
 import CoreEngine
-
+from MultiObjectTracker import MultiObjectTracker
 
 # Load image
 # framegrabber_path = 0
@@ -19,21 +19,42 @@ framegrabber.set_scaling_factor(0.50)
 apis = APIs.RESTAPIs_v1('http://localhost:5000')
 objectDetector = CoreEngine.MyObjectDetector()
 
+multiObjectTracker = MultiObjectTracker(
+    maxNumTrackedObjects=20,
+    correspondenceMaxDistance=20,
+    occlusionMinDistance=15
+)
+
 # Create visualization window(s)
 cv2.namedWindow('Output', cv2.WINDOW_NORMAL)
 
-# Loop over each frame of the input video
+# Grab first frame
 frame = framegrabber.grab_frame()
+
+# Create video writer for output
+fourcc = cv2.VideoWriter_fourcc(*'Mp4v')
+video = cv2.VideoWriter('output_video.mp4', fourcc, 25, (frame.shape[1], frame.shape[0]))
+
+# Loop over each frame of the input video
 while not framegrabber.is_ended():
 
-    # predictions = objectDetector.Detect(np.array([frame]), minScore=0.8)
+    #predictions = objectDetector.Detect(np.array([frame]), minScore=0.8)
     predictions = apis.DetectObjects(frame)
     #print(predictions)
+    #print(predictions[0]['boxes'].shape)
+    #print(predictions[0]['labels'].shape)
 
-    objectDetector.GetResultsOverlay(frame, predictions[0])
+    multiObjectTracker.Update(
+        frame,
+        predictions[0]['boxes'],
+        predictions[0]['labels']
+    )
+    trackedPredictions = multiObjectTracker.GetTrackedObjects(minLife=2)
+
+    #objectDetector.GetResultsOverlay(frame, predictions[0])
+    objectDetector.GetResultsOverlay(frame, trackedPredictions, useTrackingIDs=True)
     cv2.imshow('Output', frame)
-    # cv2.waitKey(0) # waits until a key is pressed
-    # break
+    video.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
             break
 
@@ -42,10 +63,5 @@ while not framegrabber.is_ended():
 
 # Release the capture and close all windows
 framegrabber.cap_release()
-
-# Show results
-# cv2.imshow("Result",np.hstack((image, dec)))
-cv2.waitKey(0) # waits until a key is pressed
-cv2.destroyAllWindows() # destroys the window showing imag
-
+video.release()
 
