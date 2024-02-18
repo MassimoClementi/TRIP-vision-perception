@@ -17,8 +17,13 @@ def Traslate(box : np.ndarray, shift : np.ndarray) -> np.ndarray:
         ])
     return res
 
-def GetDelta(bboxB, bboxA):
+def GetDelta(bboxB : np.ndarray, bboxA : np.ndarray):
     centerB = GetCenter(bboxB)
     centerA = GetCenter(bboxA)
     centerDelta = centerB - centerA
     return centerDelta
+
+def GetImagePatch(box : np.ndarray, image : np.ndarray) -> np.ndarray:
+    c1, r1, c2, r2 = np.asarray(box, dtype=int)
+    patch = image[r1:r2,c1:c2,:]
+    return patch

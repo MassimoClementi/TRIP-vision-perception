@@ -8,6 +8,8 @@ from Framegrabber import Framegrabber
 import APIs
 import CoreEngine
 from MultiObjectTracker import MultiObjectTracker
+from FeatureExtractors import FeatureExtractorORB
+from FeatureMatchers import FeatureMatcherORB
 
 # Load image
 # framegrabber_path = 0
@@ -21,8 +23,8 @@ objectDetector = CoreEngine.MyObjectDetector()
 
 multiObjectTracker = MultiObjectTracker(
     maxNumTrackedObjects=20,
-    correspondenceMaxDistance=20,
-    occlusionMinDistance=15
+    correspondenceMaxDistance=35,
+    occlusionMinDistance=20
 )
 
 # Create visualization window(s)
@@ -49,7 +51,7 @@ while not framegrabber.is_ended():
         predictions[0]['boxes'],
         predictions[0]['labels']
     )
-    trackedPredictions = multiObjectTracker.GetTrackedObjects(minLife=2)
+    trackedPredictions = multiObjectTracker.GetTrackedObjects(minLife=3)
 
     #objectDetector.GetResultsOverlay(frame, predictions[0])
     objectDetector.GetResultsOverlay(frame, trackedPredictions, useTrackingIDs=True)

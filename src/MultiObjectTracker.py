@@ -8,7 +8,9 @@ from Utilities import print_execution_time, GetNthOccurenceIndex, \
 from scipy.spatial import distance_matrix
 from Enums import MatchClassification
 import BoundingBox
-
+from FeatureExtractors import FeatureExtractor, FeatureExtractorORB
+from FeatureMatchers import FeatureMatcher, FeatureMatcherORB
+import cv2
 
 class MultiObjectTracker():
 
@@ -17,18 +19,17 @@ class MultiObjectTracker():
                  occlusionMinDistance : int) -> None:
         # Initialize parameters
         self._maxNumTrackedObjects = maxNumTrackedObjects
-        self._featureSpaceSize = 10
         self._minLife = 0
-        self._maxLife = 5
+        self._maxLife = 7
         self._correspondenceMaxDistance = correspondenceMaxDistance
         self._occlusionMinDistance = occlusionMinDistance
 
         # Initialize data arrays
         self._bboxes = np.zeros((self._maxNumTrackedObjects, 4))
         self._labels = np.zeros(self._maxNumTrackedObjects, dtype=int)
-        self._features = np.zeros(
-            (self._maxNumTrackedObjects, self._featureSpaceSize)
-        )
+        self._features = np.ndarray(self._maxNumTrackedObjects, dtype=FeatureExtractor)
+        for i in range(self._maxNumTrackedObjects):
+            self._features[i] = FeatureExtractorORB()
         self._movementVecs = np.zeros((self._maxNumTrackedObjects, 2))
         self._trackingIDs = np.zeros(self._maxNumTrackedObjects, dtype=int)
         self._lives =  np.zeros(self._maxNumTrackedObjects, dtype=int)
@@ -80,7 +81,7 @@ class MultiObjectTracker():
                 matrixCentersDistances = self.ComputeDistancesMatrix(
                     dCentersCurrLabel, tPredictedCentersCurrLabel
                 )
-                matrixFeaturesDistances = self.ComputeDistancesMatrix(
+                matrixFeaturesDistances = self.ComputeFeatureDiffMatrix(
                     dFeaturesCurrLabel, tFeaturesCurrLabel
                 )
 
@@ -89,7 +90,7 @@ class MultiObjectTracker():
             # - correspondent (get corresponding tracked object index)
             # - occlusion (get corresponding tracked object index)
             # - new match
-            weightFactor = 1.0
+            weightFactor = 0.75
             matrixWeightedDistances = weightFactor * matrixCentersDistances + \
                 (1.0 - weightFactor) * matrixFeaturesDistances
             dMatchesClassification = np.apply_along_axis(
@@ -111,7 +112,7 @@ class MultiObjectTracker():
                 
                 if currClassRes == MatchClassification.CORRESPONDENT:
                     currtIndex = tCurrLabelIndexes[currCorrespondIndex]
-                    print("Updating tracked object at index", currtIndex, "...")
+                    # print("Updating tracked object at index", currtIndex, "...")
                     currtUpdated[currtIndex] = True
                     self._movementVecs[currtIndex] = BoundingBox.GetDelta(
                         dBoxesCurrLabel[dIdx], self._bboxes[currtIndex]
@@ -122,11 +123,11 @@ class MultiObjectTracker():
                     )
                 if currClassRes == MatchClassification.OCCLUSION:
                     currtIndex = tCurrLabelIndexes[currCorrespondIndex]
-                    print("Tracked object at index", currtIndex, "in occlusion")
+                    # print("Tracked object at index", currtIndex, "in occlusion")
                     currtUpdated[currtIndex] = True
                     pass
                 if currClassRes == MatchClassification.NEW_MATCH:
-                    print("Inserting new tracked object...")
+                    # print("Inserting new tracked object...")
                     currtIndex = self.InsertNewTrackedObject(
                         dBoxesCurrLabel[dIdx], l, dFeaturesCurrLabel[dIdx]
                     )
@@ -148,12 +149,19 @@ class MultiObjectTracker():
         #self.PrintStatus()
 
 
-    def ExtractFeatures(self, image : np.ndarray, bboxes : np.ndarray) -> np.ndarray:
-        # Dummy feature extraction
-        # TODO
-        shape = bboxes.shape
-        #print(shape)
-        return np.ones((shape[0],self._featureSpaceSize))
+    def ExtractFeatures(self, image : np.ndarray, bboxes : np.ndarray) -> np.ndarray:        
+        features = np.ndarray(bboxes.shape[0], dtype=FeatureExtractorORB)
+
+        for i in range(bboxes.shape[0]):
+            patch = BoundingBox.GetImagePatch(bboxes[i],image)
+            features[i] = FeatureExtractorORB()
+            features[i].ComputeFeatures(patch)
+            frameDisp = features[i].GetKeypointsVisualization()
+            # cv2.imshow('Output', patch)
+            # cv2.imshow('Output', frameDisp)
+            # cv2.waitKey(0)
+
+        return features
   
     def GetPredictedPosition(self, boxes : np.ndarray, 
                              movementVec : np.ndarray) -> np.ndarray:
@@ -169,6 +177,18 @@ class MultiObjectTracker():
         #  Compute euclideal distance matrix between 2D points
         distancesMatrix = distance_matrix(centersA, centersB)
         return distancesMatrix
+    
+    def ComputeFeatureDiffMatrix(self, featuresA : np.ndarray, featuresB : np.ndarray):
+        featureDiffMatrix = np.ndarray((featuresA.shape[0], featuresB.shape[0]))
+        for i in range(len(featuresA)):
+            for j in range(len(featuresB)):
+                featureMatcher = FeatureMatcherORB()
+                featureMatcher.ComputeMatchingFeatures(
+                    featuresA[i], featuresB[j]
+                )
+                featureDiffMatrix[i,j] = featureMatcher.GetMatchingLoss()
+        # print(featureDiffMatrix)
+        return featureDiffMatrix
         
 
     def InsertNewTrackedObject(self, box : np.ndarray, label : int, 
