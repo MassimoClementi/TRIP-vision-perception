@@ -17,6 +17,7 @@ from FeatureMatchers import FeatureMatcherORB
 framegrabber_path = "../images/test-2.jpg"
 framegrabber = Framegrabber(framegrabber_path)
 framegrabber.set_scaling_factor(0.50)
+framegrabber.set_sampling_interval(10)
 
 apis = APIs.RESTAPIs_v1('http://localhost:5000')
 objectDetector = CoreEngine.MyObjectDetector()
@@ -53,8 +54,8 @@ while not framegrabber.is_ended():
     )
     trackedPredictions = multiObjectTracker.GetTrackedObjects(minLife=3)
 
-    #objectDetector.GetResultsOverlay(frame, predictions[0])
-    objectDetector.GetResultsOverlay(frame, trackedPredictions, useTrackingIDs=True)
+    #objectDetector.GetResultsOverlay(frame, frameCount, predictions[0])
+    objectDetector.GetResultsOverlay(frame, frameCount, trackedPredictions, useTrackingIDs=True)
     cv2.imshow('Output', frame)
     video.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
@@ -62,6 +63,7 @@ while not framegrabber.is_ended():
 
     # Get next frame
     frame = framegrabber.grab_frame()
+    frameCount = framegrabber.get_frame_count()
 
 # Release the capture and close all windows
 framegrabber.cap_release()

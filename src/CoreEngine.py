@@ -79,12 +79,12 @@ class MyObjectDetector():
         return predictions
     
     @print_execution_time
-    def GetResultsOverlay(self, image : np.array, predictions : dict, useTrackingIDs = False) -> np.array:
+    def GetResultsOverlay(self, image : np.array, frameCount : int, predictions : dict, useTrackingIDs = False) -> np.array:
         '''Display object detection results as overlay'''
+        display_color = (0, 255, 0)
         for i in range(len(predictions['boxes'])):
             label = predictions['labels'][i]
             c1, r1, c2, r2 = map(int, predictions['boxes'][i].tolist())
-            display_color = (0, 255, 0)
             image = cv2.rectangle(image, (c1, r1), (c2, r2), display_color, 3)
             dispText = COCOLabels_2017().GetLabel(label)
             if(useTrackingIDs):
@@ -93,5 +93,10 @@ class MyObjectDetector():
             cv2.putText(image, dispText, 
                         (c1 + 5, r1 + 15), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 
                         display_color, 2)
+        
+        # Finally, display frame count
+        cv2.putText(image, 'Frame count: {0:07d}'.format(frameCount), 
+            (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.75, 
+             display_color, 2)
         return
   

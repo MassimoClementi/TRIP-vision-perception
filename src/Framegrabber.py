@@ -7,6 +7,8 @@ import cv2
 class Framegrabber:
     stream_ended = False
     __scaling_factor = 1.
+    __frameCounter = 0
+    __frameSamplingInterval = 1
 
     def __init__(self, path):
         """Instantiate an input manager"""
@@ -26,14 +28,23 @@ class Framegrabber:
     def grab_frame(self):
         """Get the current frame"""
 
-        # Capture frame-by-frame
-        print('Grabbing frame...')
-        ret, frame = self.cap.read()
+        # Take into consideration the frame sampling factor
+        for _ in range (self.__frameSamplingInterval):
 
-        # check if frame is read correctly
-        if not ret:
-            self.stream_ended = True
-            return
+            # Capture frame-by-frame
+            print('Grabbing frame...')
+            ret, frame = self.cap.read()
+            self.__frameCounter += 1
+
+            # Check if frame is read correctly
+            if not ret:
+                self.stream_ended = True
+                return
+            
+            # Check special case of first frame
+            # Otherwise keep discarding frames not of interest
+            if(self.__frameCounter == 1):
+                break
 
         # Resize frame image
         frame_resized = cv2.resize(frame,
@@ -43,9 +54,15 @@ class Framegrabber:
         
         return frame_resized
 
+    def get_frame_count(self):
+        return self.__frameCounter
+
     def cap_release(self):
         print('Closing framegrabber...')
         return self.cap.release()
 
     def set_scaling_factor(self, scaling_factor):
         self.__scaling_factor = scaling_factor
+
+    def set_sampling_interval(self, sample_interval):
+        self.__frameSamplingInterval = max(1, sample_interval)
