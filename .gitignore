@@ -160,3 +160,5 @@ cython_debug/
 #.idea/
 *.DS_Store
 archive
+videos
+src/output_video.mp4
