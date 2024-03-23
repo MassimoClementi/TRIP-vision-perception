@@ -34,6 +34,7 @@ cv2.namedWindow('Output', cv2.WINDOW_NORMAL)
 
 # Grab first frame
 frame = framegrabber.grab_frame()
+frameCount = framegrabber.get_frame_count()
 
 # Create video writer for output
 fourcc = cv2.VideoWriter_fourcc(*'Mp4v')
