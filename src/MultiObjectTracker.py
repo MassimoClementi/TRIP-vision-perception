@@ -16,13 +16,15 @@ class MultiObjectTracker():
 
     def __init__(self, maxNumTrackedObjects : int,
                  correspondenceMaxDistance : int,
-                 occlusionMinDistance : int) -> None:
+                 occlusionMinDistance : int,
+                 distanceFeaturesWeightFactor : float) -> None:
         # Initialize parameters
         self._maxNumTrackedObjects = maxNumTrackedObjects
         self._minLife = 0
         self._maxLife = 7
         self._correspondenceMaxDistance = correspondenceMaxDistance
         self._occlusionMinDistance = occlusionMinDistance
+        self._distanceFeaturesWeightFactor = distanceFeaturesWeightFactor
 
         # Initialize data arrays
         self._bboxes = np.zeros((self._maxNumTrackedObjects, 4))
@@ -42,7 +44,6 @@ class MultiObjectTracker():
 
         # For each unique class of detected matches
         for l in np.unique(dLabels):
-            print('Current label is', l)
 
             # Between detected objects, select those which are of given class
             dCurrLabelMask = dLabels == l
@@ -90,9 +91,8 @@ class MultiObjectTracker():
             # - correspondent (get corresponding tracked object index)
             # - occlusion (get corresponding tracked object index)
             # - new match
-            weightFactor = 0.75
-            matrixWeightedDistances = weightFactor * matrixCentersDistances + \
-                (1.0 - weightFactor) * matrixFeaturesDistances
+            matrixWeightedDistances = self._distanceFeaturesWeightFactor * matrixCentersDistances + \
+                (1.0 - self._distanceFeaturesWeightFactor) * matrixFeaturesDistances
             dMatchesClassification = np.apply_along_axis(
                     self.GetDetectedMatchClassification, 1, matrixWeightedDistances
             )

@@ -23,9 +23,10 @@ apis = APIs.RESTAPIs_v1('http://localhost:5000')
 objectDetector = CoreEngine.MyObjectDetector()
 
 multiObjectTracker = MultiObjectTracker(
-    maxNumTrackedObjects=20,
-    correspondenceMaxDistance=35,
-    occlusionMinDistance=20
+    maxNumTrackedObjects=150,
+    correspondenceMaxDistance=50,
+    occlusionMinDistance=20,
+    distanceFeaturesWeightFactor=0.5
 )
 
 # Create visualization window(s)
