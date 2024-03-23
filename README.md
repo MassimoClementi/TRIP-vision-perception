@@ -31,32 +31,44 @@ Install all required Python3 packages
 pip3 install -r requirements.txt
 ```
 
-
-## Run processing server
-
-Make sure that Docker Engine is installed and running.
-
-Then run the server by using the following command
+Install torch and torchvision with CUDA support. For istance, for CUDA 11.8 use the following command
 ```
-docker compose up --build
+conda install pytorch==2.1.2 torchvision==0.16.2 pytorch-cuda=11.8 -c pytorch -c nvidia
 ```
 
 
-## Run client
+## Run server
 
 If not already activated, activate the conda environment
 ```
 conda activate trip-vision-perception
 ```
 
-Then run client using Python3
+Then run the server by using the following command
+```
+python3 Server.py
+```
+
+For the dockerized version, use the following command
+```
+docker compose up --build
+```
+
+## Run client
+
+Make sure that the conda environment is properly selected
+```
+conda activate trip-vision-perception
+```
+
+Then run the client by using the following command
 ```
 python3 Client.py
 ```
 
 ## Cleanup
 
-Clean docker cache using the following command:
+If docker is used, it is possible to clean the docker cache content by using the following command:
 ```
 docker system prune -a
 ```
