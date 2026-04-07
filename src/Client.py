@@ -8,8 +8,7 @@ from Framegrabber import Framegrabber
 import APIs
 import CoreEngine
 from MultiObjectTracker import MultiObjectTracker
-from FeatureExtractors import FeatureExtractorORB
-from FeatureMatchers import FeatureMatcherORB
+
 
 # Load image
 # framegrabber_path = 0
@@ -17,7 +16,7 @@ from FeatureMatchers import FeatureMatcherORB
 # framegrabber_path = "../images/test-2.jpg"
 framegrabber_path = "../videos/traffic-short.mp4"
 # framegrabber_path = "../videos/roomba-POV.mp4"
-# framegrabber_path = "../videos/roomba-POV-2.mp4"
+# framegrabber_path = "../videos/roomba-POV-2.mp4"
 framegrabber = Framegrabber(framegrabber_path)
 framegrabber.set_scaling_factor(1.0)
 framegrabber.set_sampling_interval(1)
@@ -39,27 +38,6 @@ cv2.namedWindow('Output', cv2.WINDOW_NORMAL)
 # Grab first frame
 frame = framegrabber.grab_frame()
 frameCount = framegrabber.get_frame_count()
-
-# TEST features orb
-# featureExtractorORB = FeatureExtractorORB()
-# featureExtractorORB.ComputeFeatures(frame)
-# frameDisplay = featureExtractorORB.GetKeypointsVisualization()
-# cv2.imshow('Output', frameDisplay)
-# cv2.waitKey(0)
-# frame = framegrabber.grab_frame()
-# frame = cv2.imread('/Users/massimoclementi/GitHub Projects/TRIP-vision-perception/images/test-1.jpg')
-# featureExtractorORB2 = FeatureExtractorORB()
-# featureExtractorORB2.ComputeFeatures(frame)
-# frameDisplay = featureExtractorORB2.GetKeypointsVisualization()
-# cv2.imshow('Output', frameDisplay)
-# cv2.waitKey(0)
-# featureMatcherORB = FeatureMatcherORB()
-# featureMatcherORB.ComputeMatchingFeatures(featureExtractorORB, featureExtractorORB2)
-# print('Matching loss value:', featureMatcherORB.GetMatchingLoss())
-# frameDisplay = featureMatcherORB.GetMatchesVisualization()
-# cv2.imshow('Output', frameDisplay)
-# cv2.waitKey(0)
-# quit()
 
 # Create video writer for output
 fourcc = cv2.VideoWriter_fourcc(*'Mp4v')
@@ -84,9 +62,6 @@ while not framegrabber.is_ended():
     #objectDetector.GetResultsOverlay(frame, frameCount, predictions[0])
     objectDetector.GetResultsOverlay(frame, frameCount, trackedPredictions, useTrackingIDs=True)
 
-    # featureExtractorORB.ComputeFeatures(frame)
-    # frame = featureExtractorORB.GetKeypointsVisualization()
-    
     cv2.imshow('Output', frame)
     video.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
