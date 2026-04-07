@@ -1,3 +1,7 @@
+# Date:     2024-09-14
+# Author:   Massimo Clementi <massimo_clementi@icloud.com>
+# Topic:    Class that defines structures to manage Aruco markers
+
 import numpy as np
 import cv2
 

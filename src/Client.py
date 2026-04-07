@@ -8,18 +8,21 @@ from Framegrabber import Framegrabber
 import APIs
 import CoreEngine
 from MultiObjectTracker import MultiObjectTracker
-from FeatureExtractors import FeatureExtractorORB
-from FeatureMatchers import FeatureMatcherORB
+
 
 # Load image
 # framegrabber_path = 0
 # framegrabber_path = "../images/test-1.jpg"
-framegrabber_path = "../images/test-2.jpg"
+# framegrabber_path = "../images/test-2.jpg"
+framegrabber_path = "../videos/traffic-short.mp4"
+# framegrabber_path = "../videos/roomba-POV.mp4"
+# framegrabber_path = "../videos/roomba-POV-2.mp4"
 framegrabber = Framegrabber(framegrabber_path)
-framegrabber.set_scaling_factor(0.50)
-framegrabber.set_sampling_interval(10)
+framegrabber.set_scaling_factor(1.0)
+framegrabber.set_sampling_interval(1)
 
-apis = APIs.RESTAPIs_v1('http://localhost:5000')
+#apis = APIs.RESTAPIs_v1('http://192.168.1.17:5000')
+apis = APIs.RESTAPIs_v1('http://127.0.0.1:5000')
 objectDetector = CoreEngine.MyObjectDetector()
 
 multiObjectTracker = MultiObjectTracker(
@@ -58,6 +61,7 @@ while not framegrabber.is_ended():
 
     #objectDetector.GetResultsOverlay(frame, frameCount, predictions[0])
     objectDetector.GetResultsOverlay(frame, frameCount, trackedPredictions, useTrackingIDs=True)
+
     cv2.imshow('Output', frame)
     video.write(frame)
     if cv2.waitKey(1) & 0xFF == ord('q'):
