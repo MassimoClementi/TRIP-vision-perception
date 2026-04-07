@@ -76,4 +76,7 @@ while not framegrabber.is_ended():
     frame = framegrabber.grab_frame()
     frameCount = framegrabber.get_frame_count()
 
+    while cv2.waitKey(1) & 0xFF != ord('q'):
+        pass
+
 
